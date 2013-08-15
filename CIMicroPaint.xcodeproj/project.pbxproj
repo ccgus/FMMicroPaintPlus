@@ -34,7 +34,6 @@
 		287DD8E215683AC9005216D8 /* FMCIView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = FMCIView.m; sourceTree = "<group>"; };
 		287DD8E515683CBB005216D8 /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = System/Library/Frameworks/OpenGL.framework; sourceTree = SDKROOT; };
 		287DD8E715683CC0005216D8 /* QuartzCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuartzCore.framework; path = System/Library/Frameworks/QuartzCore.framework; sourceTree = SDKROOT; };
-		287DD8E915684335005216D8 /* ReadMe.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = ReadMe.txt; sourceTree = SOURCE_ROOT; };
 		CCC7E32517BBFDBA004A04EE /* aoraki-90388.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "aoraki-90388.jpg"; sourceTree = "<group>"; };
 		CCD758A717BB3819001D930B /* FMCGSurface.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FMCGSurface.h; sourceTree = "<group>"; };
 		CCD758A817BB3819001D930B /* FMCGSurface.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = FMCGSurface.m; sourceTree = "<group>"; };
@@ -59,7 +58,6 @@
 		287DD8AA156838D1005216D8 = {
 			isa = PBXGroup;
 			children = (
-				287DD8E915684335005216D8 /* ReadMe.txt */,
 				287DD8BF156838D1005216D8 /* CIMicroPaint */,
 				287DD8B8156838D1005216D8 /* Frameworks */,
 				287DD8B6156838D1005216D8 /* Products */,

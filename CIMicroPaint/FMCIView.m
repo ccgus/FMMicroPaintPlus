@@ -38,7 +38,7 @@
          */
 		static const NSOpenGLPixelFormatAttribute attr[] = {
 			NSOpenGLPFAAccelerated,
-            NSOpenGLPFADoubleBuffer,
+            //NSOpenGLPFADoubleBuffer,
 			//NSOpenGLPFANoRecovery,
 			NSOpenGLPFAColorSize, 32,
 			NSOpenGLPFAAllowOfflineRenderers,  /* Allow use of offline renderers */
@@ -215,7 +215,7 @@
 }
 
 
-- (void)drawRect:(NSRect)rect {
+- (void)drawRect:(NSRect)updateRect {
     
     [[self openGLContext] makeCurrentContext];
 	
@@ -223,18 +223,16 @@
 		[self displayProfileChanged:nil];
 	}
     
+    NSRect visibleRect = [[[self enclosingScrollView] contentView] documentVisibleRect];
+    
     [self updateMatrices];
     
-    /*
-     Clear the specified subrect of the OpenGL surface then render the image into the view. Use the GL scissor test to clip to the subrect. Ask CoreImage to generate an extra pixel in case it has to interpolate (allow for hardware inaccuracies).
-     */
-    
-    //CGRect rr = CGRectIntersection(CGRectInset (integralRect, -1.0f, -1.0f), NSRectToCGRect(_lastBounds));
-    
-    //glScissor(integralRect.origin.x, integralRect.origin.y, integralRect.size.width, integralRect.size.height);
-    //glEnable(GL_SCISSOR_TEST);
-    
-    //glClear(GL_COLOR_BUFFER_BIT);
+    // let's do a clip in GL land, which is in window coordinates, not in our image coordinates.
+    CGRect glClipRect = CGRectInset(CGRectIntegral(updateRect), -1.0f, -1.0f);
+    glClipRect.origin.x -= visibleRect.origin.x;
+    glClipRect.origin.y -= visibleRect.origin.y;
+    glScissor(glClipRect.origin.x, glClipRect.origin.y, glClipRect.size.width, glClipRect.size.height);
+    glEnable(GL_SCISSOR_TEST);
     
     {
         CIImage *img = [[self imageAccumulator] image];
@@ -272,12 +270,9 @@
         
         img = [compFilter valueForKey:kCIOutputImageKey];
         
-        NSRect visibleRect   = [[[self enclosingScrollView] contentView] documentVisibleRect];
-        NSRect visibleBounds = visibleRect; visibleBounds.origin = NSZeroPoint;
-        
         if ([[NSUserDefaults standardUserDefaults] boolForKey:@"showHUD"]) {
             
-            [self drawHUDRect:rect];
+            [self drawHUDRect:updateRect];
             
             [compFilter setValue:[_hudSurface CIImage] forKey:kCIInputImageKey];
             [compFilter setValue:img forKey:kCIInputBackgroundImageKey];
@@ -287,15 +282,15 @@
         img = [img imageByCroppingToRect:visibleRect];
         img = [img imageByApplyingTransform:CGAffineTransformMakeTranslation(-visibleRect.origin.x, -visibleRect.origin.y)];
         
-        [[self context] drawImage:img inRect:visibleBounds fromRect:visibleBounds];
+        [[self context] drawImage:img inRect:glClipRect fromRect:glClipRect];
         
     }
     
     glDisable(GL_SCISSOR_TEST);
     
     // Flush the OpenGL command stream. If the view is double buffered this should be replaced by [[self openGLContext] flushBuffer].
-    //glFlush();
-    [[self openGLContext] flushBuffer];
+    glFlush();
+    //[[self openGLContext] flushBuffer];
 }
 
 
