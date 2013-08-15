@@ -272,7 +272,7 @@
         
         if ([[NSUserDefaults standardUserDefaults] boolForKey:@"showHUD"]) {
             
-            [self drawHUDRect:updateRect];
+            [self drawHUDRect:glClipRect];
             
             [compFilter setValue:[_hudSurface CIImage] forKey:kCIInputImageKey];
             [compFilter setValue:img forKey:kCIInputBackgroundImageKey];
@@ -288,11 +288,24 @@
     
     glDisable(GL_SCISSOR_TEST);
     
+    // [self glStrokeRect:glClipRect];
+    
     // Flush the OpenGL command stream. If the view is double buffered this should be replaced by [[self openGLContext] flushBuffer].
     glFlush();
     //[[self openGLContext] flushBuffer];
 }
 
+- (void)glStrokeRect:(NSRect)r {
+    glColor3f(0.0, 1.0, 0.0);
+    glBegin(GL_LINE_LOOP);
+    
+    glVertex3f(NSMinX(r), NSMinY(r), 0.0f); // The bottom left corner
+    glVertex3f(NSMinX(r), NSMaxY(r), 0.0f); // The top left corner
+    glVertex3f(NSMaxX(r), NSMaxY(r), 0.0f); // The top right corner
+    glVertex3f(NSMaxX(r), NSMinY(r), 0.0f); // The bottom right corner
+    
+    glEnd();
+}
 
 
 - (NSPoint)transformCanvasPointToView:(NSPoint)p {
