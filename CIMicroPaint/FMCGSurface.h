@@ -12,6 +12,7 @@
 
 + (id)surfaceWithSize:(NSSize)s;
 + (id)iosurfaceWithSize:(NSSize)s;
++ (id)iosurfaceWithSize:(NSSize)s CGLContext:(CGLContextObj)cglCtx pixelFormat:(CGLPixelFormatObj)pf;
 
 - (CIImage*)image;
 - (CGImageRef)CGImage __attribute__((cf_returns_retained));

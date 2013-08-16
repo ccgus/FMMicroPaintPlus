@@ -91,7 +91,7 @@
     [self setFrame:[baseImage extent]];
     
     CIImageAccumulator *acc = [[CIImageAccumulator alloc] initWithExtent:[baseImage extent] format:kCIFormatRGBA16];
-    //CIImageAccumulator *acc = (CIImageAccumulator*)[FMCGSurface iosurfaceWithSize:[baseImage extent].size];
+    //CIImageAccumulator *acc = (CIImageAccumulator*)[FMCGSurface iosurfaceWithSize:[baseImage extent].size CGLContext:[[self openGLContext] CGLContextObj] pixelFormat:[pixelFormat CGLPixelFormatObj]];
     
     [acc setImage:baseImage dirtyRect:[baseImage extent]];
     

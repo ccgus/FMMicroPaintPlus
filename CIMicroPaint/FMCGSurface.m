@@ -33,11 +33,21 @@
 
 + (id)iosurfaceWithSize:(NSSize)s {
     
+    return [self iosurfaceWithSize:s CGLContext:nil pixelFormat:nil];
+}
+
++ (id)iosurfaceWithSize:(NSSize)s CGLContext:(CGLContextObj)cglCtx pixelFormat:(CGLPixelFormatObj)pf {
+    
     FMCGSurface *surf = [FMCGSurface new];
     
     [surf setIoSurfaceBacked:YES];
-    
     [surf createContextOfSize:s];
+    
+    if (cglCtx) {
+        CIContext *ctx = [CIContext contextWithCGLContext:cglCtx pixelFormat:pf colorSpace:[surf colorspace] options:nil];
+        assert(ctx);
+        [surf setContext:ctx];
+    }
     
     return surf;
 }
