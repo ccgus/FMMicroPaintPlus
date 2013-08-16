@@ -20,7 +20,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		287DD8B5156838D1005216D8 /* CIMicroPaint.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; name = CIMicroPaint.app; path = FMMicroPaintPlus.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		287DD8B5156838D1005216D8 /* FMMicroPaintPlus.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FMMicroPaintPlus.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		287DD8B9156838D1005216D8 /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = System/Library/Frameworks/Cocoa.framework; sourceTree = SDKROOT; };
 		287DD8BC156838D1005216D8 /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = System/Library/Frameworks/AppKit.framework; sourceTree = SDKROOT; };
 		287DD8BD156838D1005216D8 /* CoreData.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreData.framework; path = System/Library/Frameworks/CoreData.framework; sourceTree = SDKROOT; };
@@ -67,7 +67,7 @@
 		287DD8B6156838D1005216D8 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				287DD8B5156838D1005216D8 /* CIMicroPaint.app */,
+				287DD8B5156838D1005216D8 /* FMMicroPaintPlus.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -136,7 +136,7 @@
 			);
 			name = FMMicroPaintPlus;
 			productName = CIMicroPaint;
-			productReference = 287DD8B5156838D1005216D8 /* CIMicroPaint.app */;
+			productReference = 287DD8B5156838D1005216D8 /* FMMicroPaintPlus.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */

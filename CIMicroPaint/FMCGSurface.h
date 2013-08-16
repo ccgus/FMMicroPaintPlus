@@ -13,7 +13,7 @@
 + (id)surfaceWithSize:(NSSize)s;
 + (id)iosurfaceWithSize:(NSSize)s;
 
-- (CIImage*)CIImage;
+- (CIImage*)image;
 - (CGImageRef)CGImage __attribute__((cf_returns_retained));
 
 - (void)clear;
@@ -21,5 +21,10 @@
 - (void)drawRect:(NSRect)r onSurfaceWithBlock:(void (^)())b;
 
 - (BOOL)reshapeToSize:(NSSize)s;
+
+- (void)setImage:(CIImage *)im dirtyRect:(CGRect)r;
+- (void)compositeOverImage:(CIImage*)img dirtyRect:(CGRect)dirtyRect;
+
+- (CGRect)extent;
 
 @end

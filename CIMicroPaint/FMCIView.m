@@ -90,11 +90,12 @@
     
     [self setFrame:[baseImage extent]];
     
-    CIImageAccumulator *newAccumulator = [[CIImageAccumulator alloc] initWithExtent:[baseImage extent] format:kCIFormatRGBA16];
+    CIImageAccumulator *acc = [[CIImageAccumulator alloc] initWithExtent:[baseImage extent] format:kCIFormatRGBA16];
+    //CIImageAccumulator *acc = (CIImageAccumulator*)[FMCGSurface iosurfaceWithSize:[baseImage extent].size];
     
-    [newAccumulator setImage:baseImage];
+    [acc setImage:baseImage dirtyRect:[baseImage extent]];
     
-    [self setImageAccumulator:newAccumulator];
+    [self setImageAccumulator:acc];
     
     [self setNeedsDisplay:YES];
     
@@ -274,7 +275,7 @@
             
             [self drawHUDRect:glClipRect];
             
-            [compFilter setValue:[_hudSurface CIImage] forKey:kCIInputImageKey];
+            [compFilter setValue:[_hudSurface image] forKey:kCIInputImageKey];
             [compFilter setValue:img forKey:kCIInputBackgroundImageKey];
             img = [compFilter valueForKey:kCIOutputImageKey];
         }
@@ -403,6 +404,7 @@
     CIVector *inputCenter = [CIVector vectorWithX:loc.x Y:loc.y];
     [brushFilter setValue:inputCenter forKey:@"inputCenter"];
     
+    
     CIFilter *compositeFilter = [self compositeFilter];
     
     [compositeFilter setValue:[brushFilter valueForKey:@"outputImage"] forKey:@"inputImage"];
@@ -411,6 +413,7 @@
     CGFloat brushSize = [self brushSize];
     CGRect rect = CGRectMake(loc.x-brushSize, loc.y-brushSize, 2.0*brushSize, 2.0*brushSize);
     
+    //[[self imageAccumulator] compositeOverImage:[brushFilter valueForKey:@"outputImage"] dirtyRect:rect];
     [[self imageAccumulator] setImage:[compositeFilter valueForKey:@"outputImage"] dirtyRect:rect];
     
     [self setScaledImage:nil];
@@ -496,5 +499,6 @@
 - (void)resetCursorRects {
     [self addCursorRect:[self viewRectForFilterCenter] cursor:[NSCursor openHandCursor]];
 }
+
 
 @end
