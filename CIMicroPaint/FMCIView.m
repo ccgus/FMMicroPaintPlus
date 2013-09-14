@@ -15,7 +15,6 @@
 @property (nonatomic, strong) CIFilter *gradientFilter;
 @property (nonatomic, strong) CIImage *scaledImage;
 @property (nonatomic, strong) FMCGSurface *hudSurface;
-@property (assign) CGFloat brushSize;
 @property (assign) CGFloat scale;
 @property (assign) CGFloat filterRadius;
 @property (assign) NSPoint filterCenter;
@@ -38,14 +37,16 @@
          */
 		static const NSOpenGLPixelFormatAttribute attr[] = {
 			NSOpenGLPFAAccelerated,
-            //NSOpenGLPFADoubleBuffer,
-			//NSOpenGLPFANoRecovery,
-			NSOpenGLPFAColorSize, 32,
-			NSOpenGLPFAAllowOfflineRenderers,  /* Allow use of offline renderers */
+			NSOpenGLPFANoRecovery,
+			NSOpenGLPFAColorSize, 24,
+            NSOpenGLPFAAlphaSize,  8,
+            NSOpenGLPFAMultisample,
+            NSOpenGLPFASampleBuffers, 1,
+            NSOpenGLPFASamples, 4,
 			0
 		};
 		
-		pf = [[NSOpenGLPixelFormat alloc] initWithAttributes:attr];
+        pf = [[NSOpenGLPixelFormat alloc] initWithAttributes:attr];
     }
 	
     return pf;
@@ -55,7 +56,6 @@
 - (id)initWithFrame:(NSRect)frame {
     self = [super initWithFrame:frame];
     if (self != nil) {
-        _brushSize      = 25.0;
         _scale          = 1.0;
         
         _color          = [NSColor colorWithDeviceRed:0.0 green:0.0 blue:0.0 alpha:1.0];
@@ -67,7 +67,10 @@
         _compositeFilter = [CIFilter filterWithName: @"CISourceOverCompositing"];
         _gradientFilter  = [CIFilter filterWithName:@"CIRadialGradient"];
         
-        [[NSUserDefaults standardUserDefaults] setBool:YES forKey:@"showHUD"];
+        if ([[NSUserDefaults standardUserDefaults] floatForKey:@"brushSize"] < 1) {
+            [[NSUserDefaults standardUserDefaults] setFloat:25 forKey:@"brushSize"];
+        }
+        
     }
     
     return self;
@@ -90,8 +93,19 @@
     
     [self setFrame:[baseImage extent]];
     
-    CIImageAccumulator *acc = [[CIImageAccumulator alloc] initWithExtent:[baseImage extent] format:kCIFormatRGBA16];
-    //CIImageAccumulator *acc = (CIImageAccumulator*)[FMCGSurface iosurfaceWithSize:[baseImage extent].size CGLContext:[[self openGLContext] CGLContextObj] pixelFormat:[pixelFormat CGLPixelFormatObj]];
+    CGColorSpaceRef colorSpace = CGColorSpaceCreateWithName(kCGColorSpaceGenericRGB);
+    
+    
+    //CIImageAccumulator *acc = [[CIImageAccumulator alloc] initWithExtent:[baseImage extent] format:kCIFormatRGBA16];
+    //CIImageAccumulator *acc = (CIImageAccumulator*)[FMCGSurface iosurfaceWithSize:[baseImage extent].size CGLContext:[[self openGLContext] CGLContextObj] pixelFormat:[pixelFormat CGLPixelFormatObj] colorSpace:colorSpace];
+    //CIImageAccumulator *acc = (CIImageAccumulator*)[FMCGSurface surfaceWithSize:[baseImage extent].size];
+    
+    CIImageAccumulator *acc = (CIImageAccumulator*)[FMCGSurface glSurfaceWithSize:[baseImage extent].size
+                                                                       CGLContext:[[self openGLContext] CGLContextObj]
+                                                                      pixelFormat:[pixelFormat CGLPixelFormatObj]
+                                                                       colorSpace:colorSpace];
+    
+    CGColorSpaceRelease(colorSpace);
     
     [acc setImage:baseImage dirtyRect:[baseImage extent]];
     
@@ -110,7 +124,7 @@
     
     _filterCenter = NSMakePoint(NSMidX([baseImage extent]), NSMidY([baseImage extent]));
     
-    [self takeScaleValueFrom:@(.25)];
+    [self takeScaleValueFrom:@(1)];
 }
 
 - (void)setContextOptions:(NSDictionary *)dict {
@@ -139,6 +153,9 @@
     glStencilMask(0);
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     glHint(GL_TRANSFORM_HINT_APPLE, GL_FASTEST);
+    
+    glEnable(GL_TEXTURE_RECTANGLE_ARB);
+    
 }
 
 
@@ -263,6 +280,7 @@
             
             img = [gradientCompFilter valueForKey:kCIOutputImageKey];
             
+            //[self setScaledImage:img];
             [self setScaledImage:[img imageByApplyingTransform:CGAffineTransformMakeScale(_scale, _scale)]];
         }
         
@@ -393,10 +411,12 @@
                 
     }
     
+    CGFloat brushSize = [[NSUserDefaults standardUserDefaults] floatForKey:@"brushSize"];
+    
     CIFilter *brushFilter = [self brushFilter];
     
-    [brushFilter setValue:@([self brushSize])     forKey:@"inputRadius1"];
-    [brushFilter setValue:@([self brushSize] - 2) forKey:@"inputRadius0"];
+    [brushFilter setValue:@(brushSize)     forKey:@"inputRadius1"];
+    [brushFilter setValue:@(brushSize - 2) forKey:@"inputRadius0"];
     
     CIColor *cicolor = [[CIColor alloc] initWithColor:_color];
     [brushFilter setValue:cicolor forKey:@"inputColor0"];
@@ -404,13 +424,11 @@
     CIVector *inputCenter = [CIVector vectorWithX:loc.x Y:loc.y];
     [brushFilter setValue:inputCenter forKey:@"inputCenter"];
     
-    
     CIFilter *compositeFilter = [self compositeFilter];
     
     [compositeFilter setValue:[brushFilter valueForKey:@"outputImage"] forKey:@"inputImage"];
     [compositeFilter setValue:[[self imageAccumulator] image] forKey:@"inputBackgroundImage"];
     
-    CGFloat brushSize = [self brushSize];
     CGRect rect = CGRectMake(loc.x-brushSize, loc.y-brushSize, 2.0*brushSize, 2.0*brushSize);
     
     //[[self imageAccumulator] compositeOverImage:[brushFilter valueForKey:@"outputImage"] dirtyRect:rect];
@@ -455,13 +473,13 @@
     [_scaleField setStringValue:[NSString stringWithFormat:@"%ld%%", (NSInteger)(_scale * 100)]];
     
     [[self window] invalidateCursorRectsForView:self];
-    
+
 }
 
 - (void)drawHUDRect:(NSRect)dirtyRect {
     
     if (!_hudSurface) {
-        [self setHudSurface:[FMCGSurface iosurfaceWithSize:[[self enclosingScrollView] bounds].size]];
+        [self setHudSurface:[FMCGSurface surfaceWithSize:[[self enclosingScrollView] bounds].size]];
     }
     
     NSRect visibleRect = [[self enclosingScrollView] bounds];
