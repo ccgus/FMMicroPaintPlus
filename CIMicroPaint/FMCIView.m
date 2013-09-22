@@ -3,6 +3,7 @@
 #import <OpenGL/OpenGL.h>
 #import <OpenGL/gl.h>
 #import "FMCGSurface.h"
+#import "FMIOSurfaceAccumulator.h"
 
 @interface FMCIView ()
 
@@ -18,6 +19,7 @@
 @property (assign) CGFloat scale;
 @property (assign) CGFloat filterRadius;
 @property (assign) NSPoint filterCenter;
+@property (assign) NSPoint canvasTranslate;
 @property (assign) BOOL movingFilter;
 
 - (BOOL)displaysWhenScreenProfileChanges;
@@ -99,12 +101,16 @@
     //CIImageAccumulator *acc = [[CIImageAccumulator alloc] initWithExtent:[baseImage extent] format:kCIFormatRGBA16];
     //CIImageAccumulator *acc = (CIImageAccumulator*)[FMCGSurface iosurfaceWithSize:[baseImage extent].size CGLContext:[[self openGLContext] CGLContextObj] pixelFormat:[pixelFormat CGLPixelFormatObj] colorSpace:colorSpace];
     //CIImageAccumulator *acc = (CIImageAccumulator*)[FMCGSurface surfaceWithSize:[baseImage extent].size];
-    
+    /*
     CIImageAccumulator *acc = (CIImageAccumulator*)[FMCGSurface glSurfaceWithSize:[baseImage extent].size
                                                                        CGLContext:[[self openGLContext] CGLContextObj]
                                                                       pixelFormat:[pixelFormat CGLPixelFormatObj]
                                                                        colorSpace:colorSpace];
-    
+    */
+    CIImageAccumulator *acc = (CIImageAccumulator*)[FMIOSurfaceAccumulator accumulatorWithSize:[baseImage extent].size
+                                                                       CGLContext:[[self openGLContext] CGLContextObj]
+                                                                      pixelFormat:[pixelFormat CGLPixelFormatObj]
+                                                                       colorSpace:colorSpace];
     CGColorSpaceRelease(colorSpace);
     
     [acc setImage:baseImage dirtyRect:[baseImage extent]];
@@ -124,7 +130,8 @@
     
     _filterCenter = NSMakePoint(NSMidX([baseImage extent]), NSMidY([baseImage extent]));
     
-    [self takeScaleValueFrom:@(1)];
+    [self takeScaleValueFrom:@(.25)];
+    
 }
 
 - (void)setContextOptions:(NSDictionary *)dict {
@@ -298,8 +305,10 @@
             img = [compFilter valueForKey:kCIOutputImageKey];
         }
         
-        img = [img imageByCroppingToRect:visibleRect];
+        //img = [img imageByCroppingToRect:visibleRect];
         img = [img imageByApplyingTransform:CGAffineTransformMakeTranslation(-visibleRect.origin.x, -visibleRect.origin.y)];
+        
+        img = [img imageByApplyingTransform:CGAffineTransformMakeTranslation(_canvasTranslate.x, _canvasTranslate.y)];
         
         [[self context] drawImage:img inRect:glClipRect fromRect:glClipRect];
         
@@ -332,10 +341,16 @@
     p.x  = p.x * _scale;
     p.y  = p.y * _scale;
     
+    p.x += _canvasTranslate.x;
+    p.y += _canvasTranslate.y;
+    
     return p;
 }
 
 - (NSPoint)transformViewPointToCanvas:(NSPoint)p {
+    
+    p.x -= _canvasTranslate.x;
+    p.y -= _canvasTranslate.y;
     
     p.x  = p.x / _scale;
     p.y  = p.y / _scale;
@@ -351,11 +366,17 @@
     r.size.width    = ceil(r.size.width  * _scale);
     r.size.height   = ceil(r.size.height * _scale);
     
+    r.origin.x += _canvasTranslate.x;
+    r.origin.y += _canvasTranslate.y;
+    
     return r;
 }
 
 
 - (NSRect)transformViewRectToCanvas:(NSRect)r {
+    
+    r.origin.x -= _canvasTranslate.x;
+    r.origin.y -= _canvasTranslate.y;
     
     r.origin.x      = floor(r.origin.x / _scale);
     r.origin.y      = floor(r.origin.y / _scale);

@@ -328,6 +328,8 @@ typedef enum FMCGSurfaceRenderLocation FMCGSurfaceRenderLocation;
         uint32_t ioLockSeed;
         IOSurfaceLock(_ioSurface, 0, &ioLockSeed);
         
+        // CGLTexImageIOSurface2D
+        
         [_context render:im toIOSurface:_ioSurface bounds:[self extent] colorSpace:_colorSpace];
         //[_context render:im toBitmap:IOSurfaceGetBaseAddress(_ioSurface) rowBytes:IOSurfaceGetBytesPerRow(_ioSurface) bounds:[self extent] format:kCIFormatARGB8 colorSpace:_colorSpace];
         

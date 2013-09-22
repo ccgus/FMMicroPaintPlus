@@ -17,6 +17,7 @@
 		CCC7E32617BBFDBA004A04EE /* aoraki-90388.jpg in Resources */ = {isa = PBXBuildFile; fileRef = CCC7E32517BBFDBA004A04EE /* aoraki-90388.jpg */; };
 		CCD758A917BB3819001D930B /* FMCGSurface.m in Sources */ = {isa = PBXBuildFile; fileRef = CCD758A817BB3819001D930B /* FMCGSurface.m */; };
 		CCD758AB17BB47B0001D930B /* IOSurface.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CCD758AA17BB47B0001D930B /* IOSurface.framework */; };
+		CCD9721617EF8C21000813D5 /* FMIOSurfaceAccumulator.m in Sources */ = {isa = PBXBuildFile; fileRef = CCD9721517EF8C21000813D5 /* FMIOSurfaceAccumulator.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -38,6 +39,8 @@
 		CCD758A717BB3819001D930B /* FMCGSurface.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FMCGSurface.h; sourceTree = "<group>"; };
 		CCD758A817BB3819001D930B /* FMCGSurface.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = FMCGSurface.m; sourceTree = "<group>"; };
 		CCD758AA17BB47B0001D930B /* IOSurface.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOSurface.framework; path = System/Library/Frameworks/IOSurface.framework; sourceTree = SDKROOT; };
+		CCD9721417EF8C21000813D5 /* FMIOSurfaceAccumulator.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FMIOSurfaceAccumulator.h; sourceTree = "<group>"; };
+		CCD9721517EF8C21000813D5 /* FMIOSurfaceAccumulator.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = FMIOSurfaceAccumulator.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -99,6 +102,8 @@
 			children = (
 				CCD758A717BB3819001D930B /* FMCGSurface.h */,
 				CCD758A817BB3819001D930B /* FMCGSurface.m */,
+				CCD9721417EF8C21000813D5 /* FMIOSurfaceAccumulator.h */,
+				CCD9721517EF8C21000813D5 /* FMIOSurfaceAccumulator.m */,
 				287DD8E115683AC9005216D8 /* FMCIView.h */,
 				287DD8E215683AC9005216D8 /* FMCIView.m */,
 				287DD8CE156838D2005216D8 /* MainMenu.xib */,
@@ -185,6 +190,7 @@
 				CCD758A917BB3819001D930B /* FMCGSurface.m in Sources */,
 				287DD8C6156838D2005216D8 /* main.m in Sources */,
 				287DD8E415683AC9005216D8 /* FMCIView.m in Sources */,
+				CCD9721617EF8C21000813D5 /* FMIOSurfaceAccumulator.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
