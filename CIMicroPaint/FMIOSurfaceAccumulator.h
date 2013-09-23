@@ -6,11 +6,9 @@
 
 - (CIImage*)image;
 
-- (void)clear;
-- (void)clearRect:(NSRect)r;
 - (void)setImage:(CIImage *)im dirtyRect:(CGRect)r;
-- (void)compositeOverImage:(CIImage*)img dirtyRect:(CGRect)dirtyRect;
 
 - (CGRect)extent;
 
 @end
+

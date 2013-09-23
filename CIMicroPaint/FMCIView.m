@@ -21,6 +21,7 @@
 @property (assign) NSPoint filterCenter;
 @property (assign) NSPoint canvasTranslate;
 @property (assign) BOOL movingFilter;
+@property (assign) CGColorSpaceRef imageColorSpace;
 
 - (BOOL)displaysWhenScreenProfileChanges;
 - (void)viewWillMoveToWindow:(NSWindow*)newWindow;
@@ -81,6 +82,11 @@
 
 - (void)dealloc {
 	[[NSNotificationCenter defaultCenter] removeObserver:self];
+    
+    if (_imageColorSpace) {
+        CGColorSpaceRelease(_imageColorSpace);
+    }
+    
 }
 
 - (void)awakeFromNib {
@@ -93,10 +99,15 @@
     
     CIImage *baseImage = [CIImage imageWithContentsOfURL:[[NSBundle mainBundle] URLForImageResource:@"aoraki-90388.jpg"]];
     
+    CGColorSpaceRef colorSpace = [baseImage colorSpace];
+    if (colorSpace) {
+        _imageColorSpace = CGColorSpaceRetain(colorSpace);
+    }
+    else {
+        _imageColorSpace = CGColorSpaceCreateWithName(kCGColorSpaceGenericRGB);
+    }
+    
     [self setFrame:[baseImage extent]];
-    
-    CGColorSpaceRef colorSpace = CGColorSpaceCreateWithName(kCGColorSpaceGenericRGB);
-    
     
     //CIImageAccumulator *acc = [[CIImageAccumulator alloc] initWithExtent:[baseImage extent] format:kCIFormatRGBA16];
     //CIImageAccumulator *acc = (CIImageAccumulator*)[FMCGSurface iosurfaceWithSize:[baseImage extent].size CGLContext:[[self openGLContext] CGLContextObj] pixelFormat:[pixelFormat CGLPixelFormatObj] colorSpace:colorSpace];
@@ -110,8 +121,8 @@
     CIImageAccumulator *acc = (CIImageAccumulator*)[FMIOSurfaceAccumulator accumulatorWithSize:[baseImage extent].size
                                                                        CGLContext:[[self openGLContext] CGLContextObj]
                                                                       pixelFormat:[pixelFormat CGLPixelFormatObj]
-                                                                       colorSpace:colorSpace];
-    CGColorSpaceRelease(colorSpace);
+                                                                       colorSpace:_imageColorSpace];
+    //CGColorSpaceRelease(colorSpace);
     
     [acc setImage:baseImage dirtyRect:[baseImage extent]];
     
@@ -233,7 +244,7 @@
     CGLLockContext(_cglContext); {
         // Create a new CIContext using the new output color space		
         // Since the cgl context will be rendered to the display, it is valid to rely on CI to get the colorspace from the context.
-		[self setContext:[CIContext contextWithCGLContext:_cglContext pixelFormat:[pixelFormat CGLPixelFormatObj] colorSpace:nil options:_contextOptions]];
+		[self setContext:[CIContext contextWithCGLContext:_cglContext pixelFormat:[pixelFormat CGLPixelFormatObj] colorSpace:_imageColorSpace options:_contextOptions]];
 	}
     
     CGLUnlockContext(_cglContext);
