@@ -104,11 +104,11 @@ SInt32 FMSystemVersion(void);
             assert(r == kCVReturnSuccess);
         }
         
-        returnImage = [CIImage imageWithCVImageBuffer:_cvPixelBuffer options:@{(id)kCIContextOutputColorSpace: (__bridge id)_colorSpace}];
+        returnImage = [CIImage imageWithCVImageBuffer:_cvPixelBuffer options:@{(id)kCIImageColorSpace: (__bridge id)_colorSpace}];
         
     }
     else {
-        returnImage = [CIImage imageWithIOSurface:_ioSurface options:@{(id)kCIContextOutputColorSpace: (__bridge id)_colorSpace}];
+        returnImage = [CIImage imageWithIOSurface:_ioSurface options:@{(id)kCIImageColorSpace: (__bridge id)_colorSpace}];
     }
     
     // drawing to a texture is upside down, so we need to fix that here.
