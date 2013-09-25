@@ -20,7 +20,6 @@ SInt32 FMSystemVersion(void);
 @property (assign) GLuint FBOid;
 @property (assign) GLuint FBOTextureId;
 @property (assign) NSSize size;
-@property (assign) CVPixelBufferRef cvPixelBuffer;
 @end
 
 @implementation FMIOSurfaceAccumulator
@@ -98,22 +97,16 @@ SInt32 FMSystemVersion(void);
     CIImage *returnImage = nil;
     
     if (FMSystemVersion() < 0x1090) { // 10.8 workaround for speed issues.  Yes, really.
-        
-        if (!_cvPixelBuffer) {
-            CVReturn r = CVPixelBufferCreateWithIOSurface(Nil, _ioSurface, nil, &_cvPixelBuffer);
-            assert(r == kCVReturnSuccess);
-        }
-        
-        returnImage = [CIImage imageWithCVImageBuffer:_cvPixelBuffer options:@{(id)kCIImageColorSpace: (__bridge id)_colorSpace}];
-        
+        returnImage = [CIImage imageWithTexture:_FBOTextureId size:[self extent].size flipped:NO colorSpace:[self colorSpace]];
     }
     else {
         returnImage = [CIImage imageWithIOSurface:_ioSurface options:@{(id)kCIImageColorSpace: (__bridge id)_colorSpace}];
+        
+        // drawing to a texture is upside down, so we need to fix that here.
+        returnImage = [returnImage imageByApplyingTransform:CGAffineTransformMakeScale(1, -1)];
+        returnImage = [returnImage imageByApplyingTransform:CGAffineTransformMakeTranslation(0, _size.height)];
     }
     
-    // drawing to a texture is upside down, so we need to fix that here.
-    returnImage = [returnImage imageByApplyingTransform:CGAffineTransformMakeScale(1, -1)];
-    returnImage = [returnImage imageByApplyingTransform:CGAffineTransformMakeTranslation(0, _size.height)];
     
     _lastImage = returnImage;
     
