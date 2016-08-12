@@ -8,6 +8,7 @@
 @interface FMCIView ()
 
 @property (nonatomic, strong) CIContext *context;
+@property (nonatomic, strong) id <MTLCommandQueue> commandQueue;
 @property (nonatomic, strong) NSDictionary *contextOptions;
 @property (nonatomic, strong) CIImageAccumulator *imageAccumulator;
 @property (nonatomic, strong) NSColor *color;
@@ -17,50 +18,25 @@
 @property (nonatomic, strong) CIImage *scaledImage;
 @property (nonatomic, strong) FMCGSurface *hudSurface;
 @property (assign) CGFloat scale;
+@property (assign) CGFloat retinaScale;
 @property (assign) CGFloat filterRadius;
 @property (assign) NSPoint filterCenter;
 @property (assign) NSPoint canvasTranslate;
 @property (assign) BOOL movingFilter;
 @property (assign) CGColorSpaceRef imageColorSpace;
-
-- (BOOL)displaysWhenScreenProfileChanges;
-- (void)viewWillMoveToWindow:(NSWindow*)newWindow;
-- (void)displayProfileChanged:(NSNotification*)notification;
+@property (assign) CGContextRef ioCGContext;
 
 @end
 
 @implementation FMCIView
 
-+ (NSOpenGLPixelFormat *)defaultPixelFormat {
-    static NSOpenGLPixelFormat *pf;
-	
-    if (pf == nil) {
-		/* 
-         Making sure the context's pixel format doesn't have a recovery renderer is important - otherwise CoreImage may not be able to create deeper context's that share textures with this one.
-         */
-		static const NSOpenGLPixelFormatAttribute attr[] = {
-			NSOpenGLPFAAccelerated,
-			NSOpenGLPFANoRecovery,
-			NSOpenGLPFAColorSize, 24,
-            NSOpenGLPFAAlphaSize,  8,
-            NSOpenGLPFAMultisample,
-            NSOpenGLPFASampleBuffers, 1,
-            NSOpenGLPFASamples, 4,
-			0
-		};
-		
-        pf = [[NSOpenGLPixelFormat alloc] initWithAttributes:attr];
-    }
-	
-    return pf;
-}
 
 
 - (id)initWithFrame:(NSRect)frame {
     self = [super initWithFrame:frame];
     if (self != nil) {
         _scale          = 1.0;
-        
+        _retinaScale    = 1.0;
         _color          = [NSColor colorWithDeviceRed:0.0 green:0.0 blue:0.0 alpha:1.0];
         
         _brushFilter    = [CIFilter filterWithName: @"CIRadialGradient" keysAndValues:
@@ -91,6 +67,10 @@
 
 - (void)awakeFromNib {
     
+    [self displayProfileChanged:nil];
+    
+    [self prepareMetal];
+    
     [[[self enclosingScrollView] contentView] setCopiesOnScroll:NO];
     
     [[self window] setPreferredBackingLocation:NSWindowBackingLocationVideoMemory];
@@ -109,7 +89,8 @@
     
     [self setFrame:[baseImage extent]];
     
-    //CIImageAccumulator *acc = [[CIImageAccumulator alloc] initWithExtent:[baseImage extent] format:kCIFormatRGBA16];
+    CIImageAccumulator *acc = [[CIImageAccumulator alloc] initWithExtent:[baseImage extent] format:kCIFormatRGBA16];
+    
     //CIImageAccumulator *acc = (CIImageAccumulator*)[FMCGSurface iosurfaceWithSize:[baseImage extent].size CGLContext:[[self openGLContext] CGLContextObj] pixelFormat:[pixelFormat CGLPixelFormatObj] colorSpace:colorSpace];
     //CIImageAccumulator *acc = (CIImageAccumulator*)[FMCGSurface surfaceWithSize:[baseImage extent].size];
     /*
@@ -118,10 +99,12 @@
                                                                       pixelFormat:[pixelFormat CGLPixelFormatObj]
                                                                        colorSpace:colorSpace];
     */
+    /*
     CIImageAccumulator *acc = (CIImageAccumulator*)[FMIOSurfaceAccumulator accumulatorWithSize:[baseImage extent].size
                                                                        CGLContext:[[self openGLContext] CGLContextObj]
                                                                       pixelFormat:[pixelFormat CGLPixelFormatObj]
                                                                        colorSpace:_imageColorSpace];
+    */
     //CGColorSpaceRelease(colorSpace);
     
     [acc setImage:baseImage dirtyRect:[baseImage extent]];
@@ -137,11 +120,11 @@
     [_gradientFilter setValue:@(0) forKey:@"inputRadius0"];
     [_gradientFilter setValue:@([self filterRadius]) forKey:@"inputRadius1"];
     [_gradientFilter setValue:[CIColor colorWithRed:0 green:0 blue:0 alpha:0] forKey:@"inputColor0"];
-    [_gradientFilter setValue:[CIColor colorWithRed:0 green:0 blue:0 alpha:1] forKey:@"inputColor1"];
+    [_gradientFilter setValue:[CIColor colorWithRed:0 green:0 blue:0 alpha:.2] forKey:@"inputColor1"];
     
     _filterCenter = NSMakePoint(NSMidX([baseImage extent]), NSMidY([baseImage extent]));
     
-    [self takeScaleValueFrom:@(.25)];
+    [self takeScaleValueFrom:@(1.0)];
     
 }
 
@@ -150,29 +133,22 @@
     [self setContext:nil];
 }
 
-- (void)prepareOpenGL {
-    GLint parm = 1;
-	
-    /* Enable beam-synced updates. */
-	
-    [[self openGLContext] setValues:&parm forParameter:NSOpenGLCPSwapInterval];
-	
-    /* Make sure that everything we don't need is disabled. Some of these
-     * are enabled by default and can slow down rendering. */
-	
-    glDisable(GL_ALPHA_TEST);
-    glDisable(GL_DEPTH_TEST);
-    glDisable(GL_SCISSOR_TEST);
-    glDisable(GL_BLEND);
-    glDisable(GL_DITHER);
-    glDisable(GL_CULL_FACE);
-    glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-    glDepthMask(GL_FALSE);
-    glStencilMask(0);
-    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-    glHint(GL_TRANSFORM_HINT_APPLE, GL_FASTEST);
+- (void)prepareMetal {
     
-    glEnable(GL_TEXTURE_RECTANGLE_ARB);
+    // [self setColorPixelFormat:MTLPixelFormatRGBA16Float];
+    
+    [self setDepthStencilPixelFormat:MTLPixelFormatA8Unorm];
+    
+    // Set the view to use the default device
+    [self setDevice:MTLCreateSystemDefaultDevice()];
+    
+    // Create a new command queue
+    _commandQueue = [[self device] newCommandQueue];
+    
+    _context = [CIContext contextWithMTLDevice:[self device]];
+    
+    [self setFramebufferOnly:NO];
+    [self setEnableSetNeedsDisplay:YES];
     
 }
 
@@ -183,25 +159,10 @@
     
     if (!NSEqualRects(visibleRect, _lastBounds)) {
         
-        GLsizei w = visibleRect.size.width;
-        GLsizei h = visibleRect.size.height;
         
-    
-        [[self openGLContext] update];
+        //[[self openGLContext] update];
 		
-		/* Install an orthographic projection matrix (no perspective)
-		 * with the origin in the bottom left and one unit equal to one
-		 * device pixel. */
-		
-		glViewport(0, 0, w, h);
-		
-		glMatrixMode(GL_PROJECTION);
-		glLoadIdentity();
-		glOrtho(0, w, 0, h, -1, 1);
-		
-		glMatrixMode(GL_MODELVIEW);
-		glLoadIdentity();
-		
+        
 		_lastBounds = visibleRect;
     }
 }
@@ -232,45 +193,32 @@
 		return;
 	}
     
-	_cglContext = [[self openGLContext] CGLContextObj];
-	
-    if (pixelFormat == nil) {
-		pixelFormat = [self pixelFormat];
-		if (pixelFormat == nil) {
-			pixelFormat = [[self class] defaultPixelFormat];
-        }
-	}
+    _retinaScale = [[self window] convertRectToBacking:NSMakeRect(1, 1, 1, 1)].size.width;
     
-    CGLLockContext(_cglContext); {
-        // Create a new CIContext using the new output color space		
-        // Since the cgl context will be rendered to the display, it is valid to rely on CI to get the colorspace from the context.
-		[self setContext:[CIContext contextWithCGLContext:_cglContext pixelFormat:[pixelFormat CGLPixelFormatObj] colorSpace:_imageColorSpace options:_contextOptions]];
-	}
-    
-    CGLUnlockContext(_cglContext);
 }
-
 
 - (void)drawRect:(NSRect)updateRect {
     
-    [[self openGLContext] makeCurrentContext];
-	
-    if (!_context) {
-		[self displayProfileChanged:nil];
-	}
     
-    NSRect visibleRect = [[[self enclosingScrollView] contentView] documentVisibleRect];
+    id <MTLCommandBuffer> commandBuffer = [_commandQueue commandBuffer];
     
-    [self updateMatrices];
-    
-    // let's do a clip in GL land, which is in window coordinates, not in our image coordinates.
-    CGRect glClipRect = CGRectInset(CGRectIntegral(updateRect), -1.0f, -1.0f);
-    glClipRect.origin.x -= visibleRect.origin.x;
-    glClipRect.origin.y -= visibleRect.origin.y;
-    glScissor(glClipRect.origin.x, glClipRect.origin.y, glClipRect.size.width, glClipRect.size.height);
-    glEnable(GL_SCISSOR_TEST);
-    
-    {
+    @autoreleasepool {
+        
+        /*
+        id <MTLRenderCommandEncoder> renderCommandEncocer = [commandBuffer renderCommandEncoderWithDescriptor:[MTLRenderPassDescriptor renderPassDescriptor]];
+        
+        MTLScissorRect scissorRect;
+        scissorRect.x = updateRect.origin.x;
+        scissorRect.y = updateRect.origin.y;
+        scissorRect.width = updateRect.size.width;
+        scissorRect.height = updateRect.size.height;
+        
+        [renderCommandEncocer setScissorRect:scissorRect];
+        */
+        
+        NSRect visibleRect = [[[self enclosingScrollView] contentView] documentVisibleRect];
+        
+        
         CIImage *img = [[self imageAccumulator] image];
         
         [_gradientFilter setValue:[CIVector vectorWithX:_filterCenter.x Y:_filterCenter.y] forKey:kCIInputCenterKey];
@@ -307,34 +255,74 @@
         
         img = [compFilter valueForKey:kCIOutputImageKey];
         
-        if ([[NSUserDefaults standardUserDefaults] boolForKey:@"showHUD"]) {
-            
-            [self drawHUDRect:glClipRect];
-            
-            [compFilter setValue:[_hudSurface image] forKey:kCIInputImageKey];
-            [compFilter setValue:img forKey:kCIInputBackgroundImageKey];
-            img = [compFilter valueForKey:kCIOutputImageKey];
-        }
+        /*
+         if ([[NSUserDefaults standardUserDefaults] boolForKey:@"showHUD"]) {
+         
+         [self drawHUDRect:glClipRect];
+         
+         [compFilter setValue:[_hudSurface image] forKey:kCIInputImageKey];
+         [compFilter setValue:img forKey:kCIInputBackgroundImageKey];
+         img = [compFilter valueForKey:kCIOutputImageKey];
+         }*/
         
         //img = [img imageByCroppingToRect:visibleRect];
         img = [img imageByApplyingTransform:CGAffineTransformMakeTranslation(-visibleRect.origin.x, -visibleRect.origin.y)];
         
         img = [img imageByApplyingTransform:CGAffineTransformMakeTranslation(_canvasTranslate.x, _canvasTranslate.y)];
         
-        [[self context] drawImage:img inRect:glClipRect fromRect:glClipRect];
+        //debug(@"updateRect: %@", NSStringFromRect(updateRect));
+        
+        NSRect drawRect = updateRect;
+        
+        drawRect = NSIntersectionRect(updateRect, [[self enclosingScrollView] documentVisibleRect]);
+        drawRect.size.width  *= _retinaScale;
+        drawRect.size.height *= _retinaScale;
+        drawRect.origin.x    *= _retinaScale;
+        drawRect.origin.y    *= _retinaScale;
+        
+        
+        drawRect = NSMakeRect(0, 0, 100, 100);
+        debug(@"drawRect: %@", NSStringFromRect(drawRect));
+        //debug(@"[[self enclosingScrollView] documentVisibleRect]: %@", NSStringFromRect([[self enclosingScrollView] documentVisibleRect]));
+        
+        //[_context render:img toIOSurface:[[[self currentDrawable] texture] iosurface] bounds:drawRect colorSpace:_imageColorSpace];
+        [_context render:[img imageByCroppingToRect:drawRect] toMTLTexture:[[self currentDrawable] texture] commandBuffer:commandBuffer bounds:drawRect colorSpace:_imageColorSpace];
+        
+        //[self strokeRect:drawRect toMTLTexture:[[self currentDrawable] texture]];
+    }
+    
+    [commandBuffer presentDrawable:[self currentDrawable]];
+    
+    // Finalize rendering here & push the command buffer to the GPU
+    [commandBuffer commit];
+}
+
+- (BOOL)isFlipped {
+    return NO;
+}
+
+
+
+- (void)strokeRect:(NSRect)r toMTLTexture:(id<MTLTexture>)texture {
+    
+    if (!_ioCGContext) {
+        
+        assert([texture iosurface]);
+        
+        
+        _ioCGContext = CGBitmapContextCreate(IOSurfaceGetBaseAddress([texture iosurface]),
+                                              IOSurfaceGetWidth([texture iosurface]),
+                                              IOSurfaceGetHeight([texture iosurface]),
+                                              IOSurfaceGetBytesPerElement([texture iosurface]),
+                                              IOSurfaceGetBytesPerRow([texture iosurface]),
+                                              _imageColorSpace,
+                                              kCGImageAlphaPremultipliedLast);
         
     }
     
-    glDisable(GL_SCISSOR_TEST);
+    CGContextStrokeRect(_ioCGContext, r);
     
-    // [self glStrokeRect:glClipRect];
-    
-    // Flush the OpenGL command stream. If the view is double buffered this should be replaced by [[self openGLContext] flushBuffer].
-    glFlush();
-    //[[self openGLContext] flushBuffer];
-}
-
-- (void)glStrokeRect:(NSRect)r {
+    /*
     glColor3f(0.0, 1.0, 0.0);
     glBegin(GL_LINE_LOOP);
     
@@ -343,11 +331,14 @@
     glVertex3f(NSMaxX(r), NSMaxY(r), 0.0f); // The top right corner
     glVertex3f(NSMaxX(r), NSMinY(r), 0.0f); // The bottom right corner
     
-    glEnd();
+    glEnd();*/
 }
 
 
 - (NSPoint)transformCanvasPointToView:(NSPoint)p {
+    
+    p.x  = p.x / _retinaScale;
+    p.y  = p.y / _retinaScale;
     
     p.x  = p.x * _scale;
     p.y  = p.y * _scale;
@@ -366,11 +357,21 @@
     p.x  = p.x / _scale;
     p.y  = p.y / _scale;
     
+    p.x  = p.x * _retinaScale;
+    p.y  = p.y * _retinaScale;
+    
     return p;
     
 }
 
 - (NSRect)transformCanvasRectToView:(NSRect)r {
+    
+    
+    r.origin.x      = r.origin.x / _retinaScale;
+    r.origin.y      = r.origin.y / _retinaScale;
+    r.size.width    = r.size.width  / _retinaScale;
+    r.size.height   = r.size.height / _retinaScale;
+    
     
     r.origin.x      = floor(r.origin.x * _scale);
     r.origin.y      = floor(r.origin.y * _scale);
@@ -384,20 +385,10 @@
 }
 
 
-- (NSRect)transformViewRectToCanvas:(NSRect)r {
-    
-    r.origin.x -= _canvasTranslate.x;
-    r.origin.y -= _canvasTranslate.y;
-    
-    r.origin.x      = floor(r.origin.x / _scale);
-    r.origin.y      = floor(r.origin.y / _scale);
-    r.size.width    = ceil(r.size.width  / _scale);
-    r.size.height   = ceil(r.size.height / _scale);
-    
-    return r;
-}
 
 - (void)mouseUp:(NSEvent *)event {
+    
+    
     _movingFilter = NO;
     [[self window] invalidateCursorRectsForView:self];
 }
@@ -418,7 +409,6 @@
     NSPoint loc = [self convertPoint:[event locationInWindow] fromView:nil];
     
     loc = [self transformViewPointToCanvas:loc];
-    
     
     if (_movingFilter) {
         _filterCenter = loc;
@@ -500,7 +490,7 @@
     
     newFrame = NSIntegralRectWithOptions(newFrame, NSAlignAllEdgesOutward);
     
-    [self setFrame:newFrame];
+    //[self setFrame:newFrame];
     
     [_scaleField setStringValue:[NSString stringWithFormat:@"%ld%%", (NSInteger)(_scale * 100)]];
     

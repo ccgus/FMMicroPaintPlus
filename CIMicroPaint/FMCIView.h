@@ -1,11 +1,11 @@
 #import <Cocoa/Cocoa.h>
 #import <QuartzCore/CoreImage.h>
+#import <MetalKit/MetalKit.h>
 
-@interface FMCIView : NSOpenGLView {
+@interface FMCIView : MTKView {
     
     NSRect				_lastBounds;
-	CGLContextObj		_cglContext;
-	NSOpenGLPixelFormat *pixelFormat;
+    
 	CGDirectDisplayID	_directDisplayID;
 }
 

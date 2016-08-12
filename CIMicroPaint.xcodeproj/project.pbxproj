@@ -14,6 +14,9 @@
 		287DD8E415683AC9005216D8 /* FMCIView.m in Sources */ = {isa = PBXBuildFile; fileRef = 287DD8E215683AC9005216D8 /* FMCIView.m */; };
 		287DD8E615683CBB005216D8 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 287DD8E515683CBB005216D8 /* OpenGL.framework */; };
 		287DD8E815683CC0005216D8 /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 287DD8E715683CC0005216D8 /* QuartzCore.framework */; };
+		CC3559A91D5CE48C001F5D56 /* Metal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CC3559A71D5CE48C001F5D56 /* Metal.framework */; };
+		CC3559AA1D5CE48C001F5D56 /* MetalKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CC3559A81D5CE48C001F5D56 /* MetalKit.framework */; };
+		CCB84D0D1BE3E93C001FA652 /* 16bit_gradient.png in Resources */ = {isa = PBXBuildFile; fileRef = CCB84D0C1BE3E93C001FA652 /* 16bit_gradient.png */; };
 		CCC7E32617BBFDBA004A04EE /* aoraki-90388.jpg in Resources */ = {isa = PBXBuildFile; fileRef = CCC7E32517BBFDBA004A04EE /* aoraki-90388.jpg */; };
 		CCD758A917BB3819001D930B /* FMCGSurface.m in Sources */ = {isa = PBXBuildFile; fileRef = CCD758A817BB3819001D930B /* FMCGSurface.m */; };
 		CCD758AB17BB47B0001D930B /* IOSurface.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CCD758AA17BB47B0001D930B /* IOSurface.framework */; };
@@ -35,6 +38,9 @@
 		287DD8E215683AC9005216D8 /* FMCIView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = FMCIView.m; sourceTree = "<group>"; };
 		287DD8E515683CBB005216D8 /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = System/Library/Frameworks/OpenGL.framework; sourceTree = SDKROOT; };
 		287DD8E715683CC0005216D8 /* QuartzCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuartzCore.framework; path = System/Library/Frameworks/QuartzCore.framework; sourceTree = SDKROOT; };
+		CC3559A71D5CE48C001F5D56 /* Metal.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Metal.framework; path = System/Library/Frameworks/Metal.framework; sourceTree = SDKROOT; };
+		CC3559A81D5CE48C001F5D56 /* MetalKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MetalKit.framework; path = System/Library/Frameworks/MetalKit.framework; sourceTree = SDKROOT; };
+		CCB84D0C1BE3E93C001FA652 /* 16bit_gradient.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = 16bit_gradient.png; sourceTree = "<group>"; };
 		CCC7E32517BBFDBA004A04EE /* aoraki-90388.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "aoraki-90388.jpg"; sourceTree = "<group>"; };
 		CCD758A717BB3819001D930B /* FMCGSurface.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FMCGSurface.h; sourceTree = "<group>"; };
 		CCD758A817BB3819001D930B /* FMCGSurface.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = FMCGSurface.m; sourceTree = "<group>"; };
@@ -48,6 +54,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				CC3559A91D5CE48C001F5D56 /* Metal.framework in Frameworks */,
+				CC3559AA1D5CE48C001F5D56 /* MetalKit.framework in Frameworks */,
 				CCD758AB17BB47B0001D930B /* IOSurface.framework in Frameworks */,
 				287DD8E815683CC0005216D8 /* QuartzCore.framework in Frameworks */,
 				287DD8E615683CBB005216D8 /* OpenGL.framework in Frameworks */,
@@ -78,6 +86,8 @@
 		287DD8B8156838D1005216D8 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				CC3559A71D5CE48C001F5D56 /* Metal.framework */,
+				CC3559A81D5CE48C001F5D56 /* MetalKit.framework */,
 				CCD758AA17BB47B0001D930B /* IOSurface.framework */,
 				287DD8E715683CC0005216D8 /* QuartzCore.framework */,
 				287DD8E515683CBB005216D8 /* OpenGL.framework */,
@@ -116,6 +126,7 @@
 			isa = PBXGroup;
 			children = (
 				CCC7E32517BBFDBA004A04EE /* aoraki-90388.jpg */,
+				CCB84D0C1BE3E93C001FA652 /* 16bit_gradient.png */,
 				287DD8C1156838D2005216D8 /* CIMicroPaint-Info.plist */,
 				287DD8C2156838D2005216D8 /* InfoPlist.strings */,
 				287DD8C5156838D2005216D8 /* main.m */,
@@ -174,6 +185,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				CCB84D0D1BE3E93C001FA652 /* 16bit_gradient.png in Resources */,
 				287DD8C4156838D2005216D8 /* InfoPlist.strings in Resources */,
 				CCC7E32617BBFDBA004A04EE /* aoraki-90388.jpg in Resources */,
 				287DD8D0156838D2005216D8 /* MainMenu.xib in Resources */,
@@ -220,7 +232,6 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
 				CLANG_ENABLE_OBJC_ARC = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
@@ -240,7 +251,6 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 10.8;
 				ONLY_ACTIVE_ARCH = YES;
-				SDKROOT = macosx10.8;
 			};
 			name = Debug;
 		};
@@ -248,7 +258,6 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
 				CLANG_ENABLE_OBJC_ARC = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
@@ -261,7 +270,6 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 10.8;
-				SDKROOT = macosx10.8;
 			};
 			name = Release;
 		};
