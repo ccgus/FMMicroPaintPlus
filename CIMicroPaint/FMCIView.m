@@ -2,20 +2,18 @@
 
 #import <OpenGL/OpenGL.h>
 #import <OpenGL/gl.h>
-#import "FMCGSurface.h"
 #import "FMIOSurfaceAccumulator.h"
 
 @interface FMCIView ()
 
 @property (nonatomic, strong) CIContext *context;
 @property (nonatomic, strong) NSDictionary *contextOptions;
-@property (nonatomic, strong) CIImageAccumulator *imageAccumulator;
+@property (nonatomic, strong) FMIOSurfaceAccumulator *imageAccumulator;
+@property (nonatomic, strong) FMIOSurfaceAccumulator *hudSurface;
 @property (nonatomic, strong) NSColor *color;
 @property (nonatomic, strong) CIFilter *brushFilter;
-@property (nonatomic, strong) CIFilter *compositeFilter;
 @property (nonatomic, strong) CIFilter *gradientFilter;
 @property (nonatomic, strong) CIImage *scaledImage;
-@property (nonatomic, strong) FMCGSurface *hudSurface;
 @property (assign) CGFloat scale;
 @property (assign) CGFloat filterRadius;
 @property (assign) NSPoint filterCenter;
@@ -67,7 +65,6 @@
                            @"inputColor1", [CIColor colorWithRed:0.0 green:0.0 blue:0.0 alpha:0.0],
                            @"inputRadius0", @0.0, nil];
         
-        _compositeFilter = [CIFilter filterWithName: @"CISourceOverCompositing"];
         _gradientFilter  = [CIFilter filterWithName:@"CIRadialGradient"];
         
         if ([[NSUserDefaults standardUserDefaults] floatForKey:@"brushSize"] < 1) {
@@ -109,20 +106,8 @@
     
     [self setFrame:[baseImage extent]];
     
-    //CIImageAccumulator *acc = [[CIImageAccumulator alloc] initWithExtent:[baseImage extent] format:kCIFormatRGBA16];
-    //CIImageAccumulator *acc = (CIImageAccumulator*)[FMCGSurface iosurfaceWithSize:[baseImage extent].size CGLContext:[[self openGLContext] CGLContextObj] pixelFormat:[pixelFormat CGLPixelFormatObj] colorSpace:colorSpace];
-    //CIImageAccumulator *acc = (CIImageAccumulator*)[FMCGSurface surfaceWithSize:[baseImage extent].size];
-    /*
-    CIImageAccumulator *acc = (CIImageAccumulator*)[FMCGSurface glSurfaceWithSize:[baseImage extent].size
-                                                                       CGLContext:[[self openGLContext] CGLContextObj]
-                                                                      pixelFormat:[pixelFormat CGLPixelFormatObj]
-                                                                       colorSpace:colorSpace];
-    */
-    CIImageAccumulator *acc = (CIImageAccumulator*)[FMIOSurfaceAccumulator accumulatorWithSize:[baseImage extent].size
-                                                                       CGLContext:[[self openGLContext] CGLContextObj]
-                                                                      pixelFormat:[pixelFormat CGLPixelFormatObj]
-                                                                       colorSpace:_imageColorSpace];
-    //CGColorSpaceRelease(colorSpace);
+    FMIOSurfaceAccumulator *acc = [FMIOSurfaceAccumulator accumulatorWithSize:[baseImage extent].size
+                                                                   colorSpace:_imageColorSpace];
     
     [acc setImage:baseImage dirtyRect:[baseImage extent]];
     
@@ -298,7 +283,6 @@
             
             img = [gradientCompFilter valueForKey:kCIOutputImageKey];
             
-            //[self setScaledImage:img];
             [self setScaledImage:[img imageByApplyingTransform:CGAffineTransformMakeScale(_scale, _scale)]];
         }
         
@@ -311,12 +295,13 @@
             
             [self drawHUDRect:glClipRect];
             
-            [compFilter setValue:[_hudSurface image] forKey:kCIInputImageKey];
+            CIImage *hud = [_hudSurface image];
+            
+            [compFilter setValue:hud forKey:kCIInputImageKey];
             [compFilter setValue:img forKey:kCIInputBackgroundImageKey];
             img = [compFilter valueForKey:kCIOutputImageKey];
         }
         
-        //img = [img imageByCroppingToRect:visibleRect];
         img = [img imageByApplyingTransform:CGAffineTransformMakeTranslation(-visibleRect.origin.x, -visibleRect.origin.y)];
         
         img = [img imageByApplyingTransform:CGAffineTransformMakeTranslation(_canvasTranslate.x, _canvasTranslate.y)];
@@ -427,7 +412,7 @@
         return;
     }
     
-    if ([NSEvent modifierFlags] & NSCommandKeyMask) {
+    if ([NSEvent modifierFlags] & NSEventModifierFlagCommand) {
         
         NSPoint offset = NSMakePoint([event deltaX], [event deltaY]);
         
@@ -456,15 +441,9 @@
     CIVector *inputCenter = [CIVector vectorWithX:loc.x Y:loc.y];
     [brushFilter setValue:inputCenter forKey:@"inputCenter"];
     
-    CIFilter *compositeFilter = [self compositeFilter];
-    
-    [compositeFilter setValue:[brushFilter valueForKey:@"outputImage"] forKey:@"inputImage"];
-    [compositeFilter setValue:[[self imageAccumulator] image] forKey:@"inputBackgroundImage"];
-    
     CGRect rect = CGRectMake(loc.x-brushSize, loc.y-brushSize, 2.0*brushSize, 2.0*brushSize);
     
-    //[[self imageAccumulator] compositeOverImage:[brushFilter valueForKey:@"outputImage"] dirtyRect:rect];
-    [[self imageAccumulator] setImage:[compositeFilter valueForKey:@"outputImage"] dirtyRect:rect];
+    [[self imageAccumulator] sourceAtopImage:[brushFilter outputImage] dirtyRect:rect];
     
     [self setScaledImage:nil];
     
@@ -510,17 +489,23 @@
 
 - (void)drawHUDRect:(NSRect)dirtyRect {
     
+    NSRect visibleRect = [[[self enclosingScrollView] contentView] documentVisibleRect];
+    visibleRect = [self convertRectToBacking:visibleRect];
+    
+    
+    if (_hudSurface && (!NSEqualSizes(visibleRect.size, [_hudSurface extent].size))) {
+        debug(@"killing hud");
+        _hudSurface = nil;
+    }
+        
     if (!_hudSurface) {
-        [self setHudSurface:[FMCGSurface surfaceWithSize:[[self enclosingScrollView] bounds].size]];
+        [self setHudSurface:[FMIOSurfaceAccumulator accumulatorWithSize:visibleRect.size colorSpace:_imageColorSpace]];
+    }
+    else {
+        [_hudSurface clearRect:dirtyRect];
     }
     
-    NSRect visibleRect = [[self enclosingScrollView] bounds];
-    
-    if ([_hudSurface reshapeToSize:visibleRect.size]) {
-        dirtyRect = visibleRect;
-    }
-    
-    [_hudSurface drawRect:dirtyRect onSurfaceWithBlock:^{
+    [_hudSurface drawOnCGContextWithBlock:^(CGContextRef context) {
         
         [[NSColor colorWithCalibratedWhite:0.0 alpha:.5] set];
         [[NSBezierPath bezierPathWithOvalInRect:NSInsetRect([self viewRectForFilterCenter], 1, 1)] fill];
